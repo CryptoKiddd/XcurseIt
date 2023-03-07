@@ -22,37 +22,46 @@ exports.getAllTours = async (req, res) => {
         let queryStr = JSON.stringify(queryObj)
 
         //replacing  gte|gt|lte|lt with regex to $gte|$gt|$lte|$lt
-        queryStr=queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match =>`$${match}`)
+        queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`)
 
         // query database with object json.parse is converting previously converted string to object 
         let query = Tour.find(JSON.parse(queryStr))
 
         //sorting by the provided query if requested to sort if not sorting by creation
-        if(req.query.sort){
+        if (req.query.sort) {
             let sortBy = req.query.sort.split(',').join(" ")
             query = query.sort(sortBy)
 
-        }else{
+        } else {
             query = query.sort('-createdAt')
         }
         //filtering by fields
 
-        if(req.query.fields){
+        if (req.query.fields) {
             const fields = req.query.fields.split(',').join(' ')
             query = query.select(fields)
-        }else{
+        } else {
             query = query.select('-__v')
         }
 
         //pagination
-        const page = req.query.page * 1 || 1
-        const limit = req.query.limit * 1 || 10
-        const skip =  (page - 1) * limit;
-        query = query.limit(limit).skip(skip)
+        const page = req.query.page * 1 || 1;
+        const limitBy = req.query.limit * 1 || 3
+        const skipBy = (page - 1) * limitBy || 0
+        console.log(skipBy)
 
+        query = query.skip(skipBy).limit(limitBy)
+        if (req.query.page) {
+            const numOfTours = await Tour.countDocuments()
+            console.log('rours',numOfTours)
+
+            if (skipBy >= numOfTours) {
+                 throw new Error("This page does not exist")
+                 }
+        }
         // GETTING THE RESULT FROM DB
         const tours = await query
-       
+
 
         //SEND RESPONSE
         res.status(200).json({
@@ -63,7 +72,7 @@ exports.getAllTours = async (req, res) => {
             }
         })
     } catch (error) {
-        
+
         res.status(404).json({
             status: 'fail',
             message: 'not found'
