@@ -2,68 +2,74 @@
 const Tour = require('./../models/tourModel')
 
 
+exports.aliasTopTours=(req,res,next)=>{
+    req.query.limit='5';
+    req.query.sort ='-ratingsAverage,price'
+    req.query.fields = 'name,price,ratingsAverage,sumamry,difficulty'
+    next()
+}
 
+class APIFeatures {
+    constructor(query,queryString){
+        this.query = query,
+        this.queryString = queryString
+
+    }
+
+    filter(){
+         const queryObj = { ...this.queryString }
+         const excludedFields = ['page', 'sort', 'limit', 'fields']
+         excludedFields.forEach(el => delete queryObj[el])
+
+    
+         let queryStr = JSON.stringify(queryObj)
+ 
+         queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`)
+         
+         this.query = this.query.find(JSON.parse(queryStr))
+         return this
+        
+        
+
+    }
+    sort(){
+        if (this.queryString.sort) {
+            let sortBy = this.queryString.sort.split(',').join(" ")
+            console.log(sortBy)
+            this.query = this.query.sort(sortBy)
+
+        } else {
+            this.query = this.query.sort('-createdAt')
+        }
+      return this
+    }
+    limitFields(){
+        if (this.queryString.fields) {
+            const fields = this.queryString.fields.split(',').join(' ')
+            this.query = this.query.select(fields)
+        } else {
+            query = query.select('-__v')
+        }
+        return this
+    }
+    paginate(){
+        const page = this.queryString.page * 1 || 1;
+        const limitBy = this.queryString.limit * 1 || 3
+        const skipBy = (page - 1) * limitBy 
+      
+        this.query = this.query.skip(skipBy).limit(limitBy)
+      
+        return this
+    }
+    
+}
 
 
 exports.getAllTours = async (req, res) => {
     try {
+        const features = new APIFeatures(Tour.find(),req.query).filter()
+        const tours = await features.query
 
-        //BUILD A QUERY
-        //1)  filtering
-        const queryObj = { ...req.query }
-        const excludedFields = ['page', 'sort', 'limit', 'fields']
-        excludedFields.forEach(el => delete queryObj[el])
-
-        //2)Advanced filtering
-
-        //converting the query object to string because i want 
-        //to replace gte|gt|lte|lt mongoose operators for filtering with $ sign in front
-        //because it doesnt filter without that
-        let queryStr = JSON.stringify(queryObj)
-
-        //replacing  gte|gt|lte|lt with regex to $gte|$gt|$lte|$lt
-        queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`)
-
-        // query database with object json.parse is converting previously converted string to object 
-        let query = Tour.find(JSON.parse(queryStr))
-
-        //sorting by the provided query if requested to sort if not sorting by creation
-        if (req.query.sort) {
-            let sortBy = req.query.sort.split(',').join(" ")
-            query = query.sort(sortBy)
-
-        } else {
-            query = query.sort('-createdAt')
-        }
-        //filtering by fields
-
-        if (req.query.fields) {
-            const fields = req.query.fields.split(',').join(' ')
-            query = query.select(fields)
-        } else {
-            query = query.select('-__v')
-        }
-
-        //pagination
-        const page = req.query.page * 1 || 1;
-        const limitBy = req.query.limit * 1 || 3
-        const skipBy = (page - 1) * limitBy || 0
-        console.log(skipBy)
-
-        query = query.skip(skipBy).limit(limitBy)
-        if (req.query.page) {
-            const numOfTours = await Tour.countDocuments()
-            console.log('rours',numOfTours)
-
-            if (skipBy >= numOfTours) {
-                 throw new Error("This page does not exist")
-                 }
-        }
-        // GETTING THE RESULT FROM DB
-        const tours = await query
-
-
-        //SEND RESPONSE
         res.status(200).json({
             status: 'success',
             results: tours.length,
