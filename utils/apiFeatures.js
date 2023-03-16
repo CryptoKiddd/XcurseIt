@@ -45,11 +45,12 @@ class APIFeatures {
     }
 
     paginate(){
-        const page = this.queryString.page * 1 || 1;
-        const limitBy = this.queryString.limit * 1 || 3
-        const skipBy = (page - 1) * limitBy
-
-        this.query = this.query.skip(skipBy).limit(limitBy)
+        if(this.queryString.page || this.queryString.limit ){
+            const page = this.queryString.page * 1 || 1;
+            const limitBy = this.queryString.limit * 1 || 3
+            const skipBy = (page - 1) * limitBy
+            this.query = this.query.skip(skipBy).limit(limitBy)
+        }
 
         return this
     }
