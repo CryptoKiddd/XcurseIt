@@ -69,7 +69,7 @@ exports.postTour = async (req, res) => {
     } catch (error) {
         res.status(400).json({
             status: 'fail',
-            message: "invalid data sent"
+            message: error
         })
     }
 
@@ -90,7 +90,7 @@ exports.patchTour = async (req, res) => {
     } catch (error) {
         res.status(400).json({
             status: 'fail',
-            message: "invalid data sent"
+            message: error
         })
     }
 

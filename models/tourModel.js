@@ -7,7 +7,9 @@ const tourSchema = new mongoose.Schema({
         type: String,
         require: true,
         unique: [true, 'A tour must have name '],
-        trim: true
+        trim: true,
+        maxLength: [40, 'Tour name must have max 40 characters  '],
+        minLength: [5, 'Tour name must have min 5 characters  ']
     },
     slug: String,
     duration: {
@@ -20,12 +22,18 @@ const tourSchema = new mongoose.Schema({
     },
     difficulty: {
         type: String,
-        required: [true, 'A tour must have difficulty ']
+        required: [true, 'A tour must have difficulty '],
+        enum: {
+            values: ['easy', 'medium', 'difficult'],
+            message: "Difficulty is either easy medium or difficult"
+        }
     },
 
     ratingsAverage: {
         type: Number,
-        default: 4.5
+        default: 4.5,
+        min: [1, "rating must be above 1.0"],
+        max: [5, "rating must be below 5.0"]
     },
     ratingsQuantity: {
         type: Number,
@@ -67,6 +75,8 @@ const tourSchema = new mongoose.Schema({
 
     })
 
+//middlewares
+//virtual props
 tourSchema.virtual('durationWeeks').get(function () {
     return this.duration / 7;
 })
