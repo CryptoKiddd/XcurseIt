@@ -70,18 +70,22 @@ const tourSchema = new mongoose.Schema({
 tourSchema.virtual('durationWeeks').get(function () {
     return this.duration / 7;
 })
-
+//document middleware
 tourSchema.pre('save', function (next) {
     this.slug = slugify(this.name, { lower: true })
     next()
 })
 
-
-tourSchema.pre('find', function (next) {
-
+//query middleware
+tourSchema.pre(/^find/, function (next) {
     this.find({ secretTour: { $ne: true } })
-
     next()
+})
+
+tourSchema.pre('aggregate', function (next) {
+    this.pipeline().unshift({ $match: { secretTour: { $ne: true } } })
+    next()
+
 })
 
 
